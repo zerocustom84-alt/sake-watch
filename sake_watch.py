@@ -23,6 +23,7 @@ import urllib.request
 
 SHOPS = {"osakeda.com": "오사케다", "sakemura.com": "사케무라"}
 STATE_FILE = os.environ.get("STATE_FILE", "state.json")
+HISTORY_FILE = os.environ.get("HISTORY_FILE", "history.csv")  # 신상품·재입고 누적 기록
 UA = "Mozilla/5.0 (compatible; sake-watch personal restock notifier)"
 MAX_PAGES = 40          # 250개 x 40쪽 = 최대 1만 개
 MIN_RATIO = 0.7         # 받은 상품 수가 지난번의 70% 미만이면 일시 오류로 보고 이번 회차는 건너뜀
@@ -134,6 +135,22 @@ def save_state(state):
         json.dump(state, f, ensure_ascii=False, indent=0, sort_keys=True)
 
 
+def append_history(rows):
+    """rows: [(가게, 종류, 상품명, 가격)] → history.csv 에 한국시간과 함께 추가 (키워드 필터와 무관하게 전부 기록)"""
+    if not rows:
+        return
+    import csv
+    from datetime import datetime, timedelta, timezone
+    now = datetime.now(timezone(timedelta(hours=9))).strftime("%Y-%m-%d %H:%M")
+    new_file = not os.path.exists(HISTORY_FILE)
+    with open(HISTORY_FILE, "a", encoding="utf-8-sig" if new_file else "utf-8", newline="") as f:
+        w = csv.writer(f)
+        if new_file:
+            w.writerow(["시각(KST)", "가게", "종류", "상품명", "가격"])
+        for shop, kind, title, price in rows:
+            w.writerow([now, shop, kind, title, price])
+
+
 def keyword_list():
     raw = os.environ.get("KEYWORDS", "")
     return [k.strip().lower() for k in raw.split(",") if k.strip()]
@@ -183,6 +200,7 @@ def main():
             elif not old.get("available") and item["available"]:
                 changes.append(("재입고", item))
 
+        append_history([(name, k, it["title"], fmt_price(it["price"], currency)) for k, it in changes])
         changes = [c for c in changes if matches(c[1]["title"], keywords)]
         print(f"[{name}] 상품 {len(current)}개, 알림 대상 {len(changes)}건")
 
