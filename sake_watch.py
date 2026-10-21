@@ -26,7 +26,8 @@ STATE_FILE = os.environ.get("STATE_FILE", "state.json")
 UA = "Mozilla/5.0 (compatible; sake-watch personal restock notifier)"
 MAX_PAGES = 40          # 250개 x 40쪽 = 최대 1만 개
 MIN_RATIO = 0.7         # 받은 상품 수가 지난번의 70% 미만이면 일시 오류로 보고 이번 회차는 건너뜀
-MAX_INDIVIDUAL = 8      # 한 가게에서 변화가 이보다 많으면 1건으로 묶어서 알림
+MAX_INDIVIDUAL = 30     # 한 가게에서 변화가 이보다 많으면 목록형 알림으로 묶음
+LIST_CHUNK = 15         # 목록형 알림 1건에 담을 상품 수 (전부 빠짐없이 나눠서 보냄)
 CURRENCY_SYMBOL = {"JPY": "¥", "KRW": "₩", "USD": "$"}
 
 
@@ -186,16 +187,22 @@ def main():
         print(f"[{name}] 상품 {len(current)}개, 알림 대상 {len(changes)}건")
 
         if len(changes) > MAX_INDIVIDUAL:
+            # 너무 많으면 목록형으로: 이름·가격을 빠짐없이 여러 건에 나눠 보냄
             n_new = sum(1 for k, _ in changes if k == "신상품")
             n_re = len(changes) - n_new
-            lines = [f"· {it['title']}" for _, it in changes[:10]]
-            if len(changes) > 10:
-                lines.append(f"…외 {len(changes) - 10}개")
-            notify(
-                f"[{name}] 신상품 {n_new} · 재입고 {n_re}",
-                "\n".join(lines),
-                click=f"https://{domain}/collections/all",
-            )
+            chunks = [changes[i:i + LIST_CHUNK] for i in range(0, len(changes), LIST_CHUNK)]
+            for ci, chunk in enumerate(chunks, 1):
+                lines = []
+                for kind, it in chunk:
+                    price = fmt_price(it["price"], currency)
+                    tag = "🆕" if kind == "신상품" else "🔁"
+                    lines.append(f"{tag} {it['title']}" + (f" ({price})" if price else ""))
+                notify(
+                    f"[{name}] 신상품 {n_new} · 재입고 {n_re} ({ci}/{len(chunks)})",
+                    "\n".join(lines),
+                    click=f"https://{domain}/collections/all",
+                )
+                time.sleep(1)
         else:
             for kind, it in changes:
                 price = fmt_price(it["price"], currency)
@@ -204,6 +211,7 @@ def main():
                     it["title"] + (f"\n{price}" if price else ""),
                     click=f"https://{domain}/products/{urllib.parse.quote(it['handle'])}",
                 )
+                time.sleep(0.5)
 
         state["shops"][domain] = {"items": current, "currency": currency}
 
