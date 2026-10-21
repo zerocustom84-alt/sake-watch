@@ -7,7 +7,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: sake-watch
+  group: sake-export
   cancel-in-progress: false
 
 jobs:

@@ -1,0 +1,28 @@
+name: sake-watch-watchdog
+
+# 예비 장치: 매시간 sake-watch 가 돌고 있는지 보고, 멈춰 있으면 다시 시작한다.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Start sake-watch if not running
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          n=$(gh run list --workflow sake-watch.yml --limit 10 --json status \
+              --jq '[.[] | select(.status != "completed")] | length')
+          echo "진행 중이거나 대기 중인 회차: $n"
+          if [ "$n" = "0" ]; then
+            gh workflow run sake-watch.yml --ref main
+            echo "멈춰 있어서 다시 시작함"
+          fi
