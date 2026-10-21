@@ -13,7 +13,8 @@ KST = timezone(timedelta(hours=9))
 def main():
     cutoff = datetime.now(KST) - timedelta(days=DAYS)
     rows = []
-    for domain, name in sw.SHOPS.items():
+    for domain, cfg in sw.SHOPS.items():
+        name = cfg["name"]
         for page in range(1, sw.MAX_PAGES + 1):
             data = json.loads(sw.http_get(f"https://{domain}/products.json?limit=250&page={page}"))
             prods = data.get("products", [])
