@@ -16,6 +16,7 @@
   RUN_MINUTES (기본 330), ONCE=1 (한 번만 돌고 종료, 테스트용), NO_GIT=1 (커밋 안 함)
 """
 import csv
+import re
 import json
 import os
 import subprocess
@@ -216,7 +217,10 @@ def matches(title, keywords):
 def send_alerts(domain, name, events, currency):
     """events: [(종류, item)] 중 신상품·재입고만 알림"""
     keywords = keyword_list()
-    ev = [(k, it) for k, it in events if k in ("신상품", "재입고") and matches(it["title"], keywords)]
+    # VIP/VVIP 전용 상품은 등급 회원만 살 수 있어서 알림 제외 (기록은 남김). INCLUDE_VIP=1 이면 포함
+    skip_vip = os.environ.get("INCLUDE_VIP", "0") != "1"
+    ev = [(k, it) for k, it in events if k in ("신상품", "재입고") and matches(it["title"], keywords)
+          and not (skip_vip and re.search(r"\(\s*V?VIP\s*\)", it["title"], re.I))]
     if not ev:
         return
     if len(ev) > MAX_INDIVIDUAL:
