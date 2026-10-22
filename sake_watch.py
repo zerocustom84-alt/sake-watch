@@ -287,6 +287,12 @@ def fast_check(domain, shop):
         if pid not in prev_set and (old is None or not old.get("available")):
             # 코너에 올라왔는데 이미 다 팔렸으면 기록만 (1분 안에 품절된 한정 수량)
             events.append(("재입고" if it["available"] else "재입고(즉시품절)", it))
+        elif pid in prev_set and old is not None:
+            # 코너에 계속 있는 상품의 재고 변화 (사케무라는 품절돼도 코너에 남겨 둠)
+            if old.get("available") and not it["available"]:
+                events.append(("품절", it))
+            elif not old.get("available") and it["available"]:
+                events.append(("재입고", it))
         items[pid] = {**(old or {}), **it}
     # 2) 신상품 코너의 처음 보는 상품 / 그 밖의 재고 변화
     for pid, it in newest.items():
