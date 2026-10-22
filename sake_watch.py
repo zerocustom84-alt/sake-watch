@@ -214,13 +214,19 @@ def matches(title, keywords):
     return not keywords or any(k in title.lower() for k in keywords)
 
 
+def is_vip(it):
+    """VIP·VVIP 등급 전용 상품 (상품명에 (VIP)/(VVIP), 또는 주소 끝이 -vip/-vvip)"""
+    return bool(re.search(r"\(\s*V?VIP\s*\)", it.get("title", ""), re.I)
+                or re.search(r"-v?vip(-\d+)?$", it.get("handle", ""), re.I))
+
+
 def send_alerts(domain, name, events, currency):
     """events: [(종류, item)] 중 신상품·재입고만 알림"""
     keywords = keyword_list()
     # VIP/VVIP 전용 상품은 등급 회원만 살 수 있어서 알림 제외 (기록은 남김). INCLUDE_VIP=1 이면 포함
     skip_vip = os.environ.get("INCLUDE_VIP", "0") != "1"
     ev = [(k, it) for k, it in events if k in ("신상품", "재입고") and matches(it["title"], keywords)
-          and not (skip_vip and re.search(r"\(\s*V?VIP\s*\)", it["title"], re.I))]
+          and not (skip_vip and is_vip(it))]
     if not ev:
         return
     if len(ev) > MAX_INDIVIDUAL:
