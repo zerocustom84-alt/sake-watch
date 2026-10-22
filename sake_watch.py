@@ -116,12 +116,25 @@ def parse_product(p):
             prices.append(float(v.get("price")))
         except (TypeError, ValueError):
             pass
+    buy = next((v for v in variants if v.get("available")), variants[0] if variants else None)
     return {
         "title": (p.get("title") or "").strip(),
         "handle": p.get("handle") or "",
         "available": any(v.get("available") for v in variants),
         "price": min(prices) if prices else None,
+        "variant": buy.get("id") if buy else None,
     }
+
+
+def buy_url(domain, it):
+    """장바구니에 담고 바로 결제 화면으로 (장바구니의 다른 상품은 그대로 둠)"""
+    if it.get("variant"):
+        return f"https://{domain}/cart/add?id={it['variant']}&quantity=1&return_to=/checkout"
+    return product_url(domain, it)
+
+
+def product_url(domain, it):
+    return f"https://{domain}/products/{urllib.parse.quote(it['handle'])}"
 
 
 def fetch_catalog(domain):
@@ -158,13 +171,16 @@ def fetch_currency(domain):
 
 
 # ---------------------------------------------------------------- 알림
-def notify(title, message, click=None):
+def notify(title, message, click=None, actions=None):
     sent = False
     topic = os.environ.get("NTFY_TOPIC", "").strip()
     if topic:
         body = {"topic": topic, "title": title, "message": message, "tags": ["sake"], "priority": 4}
         if click:
             body["click"] = click
+        if actions:
+            body["actions"] = [{"action": "view", "label": label, "url": url, "clear": True}
+                               for label, url in actions]
         req = urllib.request.Request("https://ntfy.sh/", data=json.dumps(body).encode("utf-8"),
                                      headers={"Content-Type": "application/json"})
         urllib.request.urlopen(req, timeout=20).read()
@@ -217,8 +233,9 @@ def send_alerts(domain, name, events, currency):
     else:
         for kind, it in ev:
             price = fmt_price(it["price"], currency)
-            notify(f"[{name}] {kind}", it["title"] + (f"\n{price}" if price else ""),
-                   click=f"https://{domain}/products/{urllib.parse.quote(it['handle'])}")
+            notify(f"[{name}] {kind}", it["title"] + (f"\n{price}" if price else "") + "\n누르면 바로 결제 화면",
+                   click=buy_url(domain, it),
+                   actions=[("바로 결제", buy_url(domain, it)), ("상품 보기", product_url(domain, it))])
             time.sleep(0.5)
 
 
