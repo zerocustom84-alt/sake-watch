@@ -30,8 +30,8 @@ from datetime import datetime, timedelta, timezone
 KST = timezone(timedelta(hours=9))
 
 SHOPS = {
-    "osakeda.com": {"name": "오사케다", "restock": "재입고", "new": "전-상품-1"},
-    "sakemura.com": {"name": "사케무라", "restock": "재입고", "new": "전-상품"},
+    "osakeda.com": {"name": "오사케다", "restock": "재입고", "new": "전-상품-1", "vip": "v"},
+    "sakemura.com": {"name": "사케무라", "restock": "재입고", "new": "전-상품", "vip": "vip"},
 }
 STATE_FILE = os.environ.get("STATE_FILE", "state.json")
 HISTORY_FILE = os.environ.get("HISTORY_FILE", "history.csv")
@@ -124,6 +124,7 @@ def parse_product(p):
         "available": any(v.get("available") for v in variants),
         "price": min(prices) if prices else None,
         "variant": buy.get("id") if buy else None,
+        "id": str(p.get("id") or ""),
     }
 
 
@@ -214,19 +215,49 @@ def matches(title, keywords):
     return not keywords or any(k in title.lower() for k in keywords)
 
 
-def is_vip(it):
-    """VIP·VVIP 등급 전용 상품 (상품명에 (VIP)/(VVIP), 또는 주소 끝이 -vip/-vvip)"""
-    return bool(re.search(r"\(\s*V?VIP\s*\)", it.get("title", ""), re.I)
+_vip_cache = {}   # domain -> (가져온 시각, {상품id})
+
+
+def vip_ids(domain, max_age=60):
+    """가게의 VIP·VVIP 전용 코너에 올라온 상품 id. 실패하면 마지막으로 받은 목록."""
+    cached = _vip_cache.get(domain)
+    if cached and time.time() - cached[0] < max_age:
+        return cached[1]
+    handle = SHOPS[domain].get("vip")
+    if not handle:
+        return set()
+    try:
+        ids = set()
+        for page in range(1, 9):
+            h = urllib.parse.quote(handle)
+            prods = get_json(f"https://{domain}/collections/{h}/products.json?limit=250&page={page}").get("products", [])
+            ids.update(str(p["id"]) for p in prods)
+            if len(prods) < 250:
+                break
+            time.sleep(1)
+        _vip_cache[domain] = (time.time(), ids)
+        return ids
+    except Throttled:
+        raise
+    except Exception as e:
+        print(f"  VIP 코너 목록 실패: {e}")
+        return cached[1] if cached else set()
+
+
+def is_vip(it, vip=frozenset()):
+    """VIP·VVIP 등급 전용 상품: 전용 코너에 있거나, 상품명에 (VIP)/(VVIP), 주소 끝이 -vip/-vvip"""
+    return bool((it.get("id") and it["id"] in vip)
+                or re.search(r"\(\s*V?VIP\s*\)", it.get("title", ""), re.I)
                 or re.search(r"-v?vip(-\d+)?$", it.get("handle", ""), re.I))
 
 
-def send_alerts(domain, name, events, currency):
+def send_alerts(domain, name, events, currency, vip=frozenset()):
     """events: [(종류, item)] 중 신상품·재입고만 알림"""
     keywords = keyword_list()
     # VIP/VVIP 전용 상품은 등급 회원만 살 수 있어서 알림 제외 (기록은 남김). INCLUDE_VIP=1 이면 포함
     skip_vip = os.environ.get("INCLUDE_VIP", "0") != "1"
     ev = [(k, it) for k, it in events if k in ("신상품", "재입고") and matches(it["title"], keywords)
-          and not (skip_vip and is_vip(it))]
+          and not (skip_vip and is_vip(it, vip))]
     if not ev:
         return
     if len(ev) > MAX_INDIVIDUAL:
@@ -282,10 +313,12 @@ def record(domain, shop, events):
         return
     cur = shop.get("currency", "")
     name = SHOPS[domain]["name"]
-    append_history([(name, k, it["title"], fmt_price(it["price"], cur)) for k, it in events])
+    vip = vip_ids(domain)
+    tag = lambda k, it: k + "(VIP전용)" if is_vip(it, vip) else k
+    append_history([(name, tag(k, it), it["title"], fmt_price(it["price"], cur)) for k, it in events])
     for k, it in events:
-        print(f"  [{name}] {k}: {it['title']}")
-    send_alerts(domain, name, events, cur)
+        print(f"  [{name}] {tag(k, it)}: {it['title']}")
+    send_alerts(domain, name, events, cur, vip)
 
 
 # ---------------------------------------------------------------- 확인 로직
