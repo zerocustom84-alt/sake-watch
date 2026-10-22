@@ -39,6 +39,8 @@ UA = "Mozilla/5.0 (compatible; sake-watch personal restock notifier; low-frequen
 
 RUN_MINUTES = float(os.environ.get("RUN_MINUTES", "330"))
 FAST_DAY, FAST_NIGHT = 60, 300          # 빠른 확인 간격(초)
+FAST_PEAK = 30                          # 입고가 몰리는 시간대 간격(초)
+PEAK = [(8, 50, 12, 30), (17, 0, 19, 0)]  # 평일 KST (시작 시,분 ~ 끝 시,분)
 FULL_DAY, FULL_NIGHT = 600, 1800        # 전체 확인 간격(초)
 COMMIT_EVERY = 1800                     # 저장소 커밋 간격(초)
 NIGHT = (2, 8)                          # 새벽 시간대 (KST, 시)
@@ -54,6 +56,20 @@ _backoff_until = 0.0                    # 429 등으로 쉬는 중이면 그 시
 
 def now_kst():
     return datetime.now(KST)
+
+
+def is_peak():
+    n = now_kst()
+    if n.weekday() >= 5:
+        return False
+    m = n.hour * 60 + n.minute
+    return any(a * 60 + b <= m < c * 60 + d for a, b, c, d in PEAK)
+
+
+def fast_interval():
+    if is_night():
+        return FAST_NIGHT
+    return FAST_PEAK if is_peak() else FAST_DAY
 
 
 def is_night():
@@ -268,8 +284,9 @@ def fast_check(domain, shop):
     # 1) RESTOCK 코너에 새로 들어온 상품
     for pid, it in restock.items():
         old = items.get(pid)
-        if pid not in prev_set and it["available"] and (old is None or not old.get("available")):
-            events.append(("재입고", it))
+        if pid not in prev_set and (old is None or not old.get("available")):
+            # 코너에 올라왔는데 이미 다 팔렸으면 기록만 (1분 안에 품절된 한정 수량)
+            events.append(("재입고" if it["available"] else "재입고(즉시품절)", it))
         items[pid] = {**(old or {}), **it}
     # 2) 신상품 코너의 처음 보는 상품 / 그 밖의 재고 변화
     for pid, it in newest.items():
@@ -420,7 +437,7 @@ def main():
             status["last_fast"] = now_kst().strftime("%Y-%m-%d %H:%M:%S")
             status["fast_times"] = (status["fast_times"] + [stamp])[-30:]
             print(f"{stamp} 확인 완료 (빠른 {status['fast_checks']}회, 전체 {status['full_checks']}회)")
-            next_fast = time.time() + (FAST_NIGHT if is_night() else FAST_DAY)
+            next_fast = time.time() + fast_interval()
             did = True
 
         # 2) 전체 확인
