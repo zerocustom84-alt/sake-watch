@@ -1,7 +1,161 @@
 {
-"generated": "2026-10-21 16:49",
+"generated": "2026-10-22 13:16",
 "days": 60,
 "rows": [
+{
+"shop": "사케무라",
+"published": "2026-10-22 11:59",
+"title": "루카 준마이 Melissa 키모토 아이야마 코우지 720ml",
+"vendor": "마츠야 주조 (松屋酒造)",
+"type": "루카 (流輝)",
+"tags": [
+"가을",
+"가을사케",
+"기본",
+"꿀벌",
+"메릿사",
+"멜리사",
+"무로카",
+"벌",
+"상품수정",
+"아이야마",
+"아키자케",
+"야마다니시키",
+"열처리",
+"일반",
+"클래식",
+"키모토",
+"히이레"
+],
+"variants": [
+{
+"name": "Default Title",
+"price": "4260",
+"available": true
+}
+],
+"available": true,
+"url": "https://sakemura.com/products/루카-준마이-메릿사키모토-아이야마-코우지-720ml"
+},
+{
+"shop": "사케무라",
+"published": "2026-10-22 11:59",
+"title": "야마니쿠모가 자아아자아아 Sweet 준마이다이긴죠 720ml",
+"vendor": "카와자와 주조 (川澤酒造)",
+"type": "야마니쿠모가 (山に雲が )",
+"tags": [
+"CEL-24",
+"기본",
+"리틀CEL-24",
+"모던",
+"상품수정",
+"스위트",
+"야마다니시키",
+"열처리",
+"오더",
+"일반",
+"히이레"
+],
+"variants": [
+{
+"name": "Default Title",
+"price": "5320",
+"available": true
+}
+],
+"available": true,
+"url": "https://sakemura.com/products/야마니쿠모가-자아아자아아-스위트-준마이다이긴죠-720ml"
+},
+{
+"shop": "사케무라",
+"published": "2026-10-22 11:59",
+"title": "아마부키 준마이 오마치 히야오로시 720ml",
+"vendor": "아마부키 주조 (天吹酒造)",
+"type": "아마부키 (天吹)",
+"tags": [
+"가을",
+"가을사케",
+"가을한정",
+"기본",
+"모던",
+"상품수정",
+"열처리",
+"오마치",
+"일반",
+"코스모스",
+"히이레"
+],
+"variants": [
+{
+"name": "Default Title",
+"price": "3980",
+"available": true
+}
+],
+"available": true,
+"url": "https://sakemura.com/products/아마부키-준마이-오마치-히야오로시-720ml"
+},
+{
+"shop": "사케무라",
+"published": "2026-10-22 11:59",
+"title": "타카치요 2'nd take RUNWAY 치요라 전용시험양조주 무로카 오리가라미 나마 720ml",
+"vendor": "타카치요 주조 (高千代酒造)",
+"type": "타카치요 (たかちよ)",
+"tags": [
+"기본",
+"나마",
+"런웨이",
+"모던",
+"무로카",
+"무로카나마",
+"무여과",
+"상품수정",
+"생주",
+"스파클링",
+"오리가라미",
+"일반",
+"타카치요",
+"활성주"
+],
+"variants": [
+{
+"name": "Default Title",
+"price": "4750",
+"available": true
+}
+],
+"available": true,
+"url": "https://sakemura.com/products/타카치요-2nd-take-runway-치요라-전용시험양조주-무로카-오리가라미-나마-720ml"
+},
+{
+"shop": "사케무라",
+"published": "2026-10-22 11:59",
+"title": "BAR 요코 우메슈 720ml",
+"vendor": "타테노카와 주조 (楯の川酒造)",
+"type": "BAR 요코 (BAR ヨー子)",
+"tags": [
+"기본",
+"리커",
+"리큐르",
+"리큐어",
+"매실",
+"매실주",
+"상품수정",
+"우매슈",
+"입문",
+"초보",
+"초보자"
+],
+"variants": [
+{
+"name": "Default Title",
+"price": "4390",
+"available": true
+}
+],
+"available": true,
+"url": "https://sakemura.com/products/bar-요코-우메슈-720ml"
+},
 {
 "shop": "사케무라",
 "published": "2026-10-21 11:59",
@@ -86,10 +240,10 @@
 {
 "name": "Default Title",
 "price": "4720",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://sakemura.com/products/와카무스메-준마이긴죠-쥬니히소쿠-720ml"
 },
 {
@@ -202,10 +356,10 @@
 {
 "name": "Default Title",
 "price": "4470",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://sakemura.com/products/마루히-준마이-야마하이-니고리자케-720ml"
 },
 {
@@ -350,6 +504,7 @@
 "vendor": "‎니시다 주조 (西田酒造)",
 "type": "덴슈 (田酒)",
 "tags": [
+"restock",
 "가을",
 "가을사케",
 "기본",
@@ -584,10 +739,10 @@
 {
 "name": "Default Title",
 "price": "9660",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://osakeda.com/products/소가페루에피스-도메인-소가-쁘띠-망생-방당주-타르디브-2024-화이트-와인-750ml"
 },
 {
@@ -688,6 +843,7 @@
 "vendor": "에미시키 주조 (笑四季酒造)",
 "type": "에미시키 (笑四季)",
 "tags": [
+"restock",
 "기본",
 "꽃효모",
 "모던",
@@ -704,10 +860,10 @@
 {
 "name": "Default Title",
 "price": "5450",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://sakemura.com/products/에미시키-준마이-미라이하센겐-inner-compass-2025-26-720ml"
 },
 {
@@ -740,10 +896,10 @@
 {
 "name": "Default Title",
 "price": "4980",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://sakemura.com/products/푸쿠푸쿠홉-vavava-summer-2026-660ml"
 },
 {
@@ -2431,7 +2587,7 @@
 "variants": [
 {
 "name": "Default Title",
-"price": "4170",
+"price": "3753",
 "available": true
 }
 ],
@@ -3707,10 +3863,10 @@
 {
 "name": "Default Title",
 "price": "4330",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://osakeda.com/products/칸코우바이-준마이긴죠-aroma-메지카-720ml"
 },
 {
@@ -4744,10 +4900,10 @@
 {
 "name": "Default Title",
 "price": "4920",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://sakemura.com/products/니이다시젠슈-준마이긴죠-키모토-우스니고리-720ml"
 },
 {
@@ -5348,7 +5504,7 @@
 "variants": [
 {
 "name": "Default Title",
-"price": "4760",
+"price": "4284",
 "available": true
 }
 ],
@@ -5672,6 +5828,7 @@
 "vendor": "타카가키 주조 (高垣酒造)",
 "type": "류진마루 (龍神丸)",
 "tags": [
+"restock",
 "기본",
 "나마",
 "나마겐슈",
@@ -5689,10 +5846,10 @@
 {
 "name": "Default Title",
 "price": "19500",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://sakemura.com/products/류진마루-준마이긴죠-나마겐슈-1800ml"
 },
 {
@@ -6727,10 +6884,10 @@
 {
 "name": "Default Title",
 "price": "4800",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://sakemura.com/products/센킨-모던-타비마이-아이야마-720ml"
 },
 {
@@ -7574,10 +7731,10 @@
 {
 "name": "Default Title",
 "price": "5615",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://osakeda.com/products/이네토아가베-크래프트-시리즈-이네토부도토호프-500ml"
 },
 {
@@ -8248,12 +8405,12 @@
 "vendor": "아베 주조 (阿部酒造)",
 "type": "아베 (あべ)",
 "tags": [
+"restock",
 "기본",
 "모던",
 "상품수정",
 "업데이트",
 "열처리",
-"오더",
 "일반",
 "히이레"
 ],
@@ -9044,10 +9201,10 @@
 {
 "name": "Default Title",
 "price": "4480",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://sakemura.com/products/타테노카와-준마이다이긴죠-하쿠바노키시-타비다치-니고리-나마-720ml-병입일-2026-01"
 },
 {
@@ -9357,10 +9514,10 @@
 {
 "name": "Default Title",
 "price": "4720",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://sakemura.com/products/우타시로-와카츠키-720ml"
 },
 {
@@ -10122,7 +10279,6 @@
 "상품수정",
 "아키아가리",
 "열처리",
-"오더",
 "일반",
 "히이레"
 ],
@@ -10130,10 +10286,10 @@
 {
 "name": "Default Title",
 "price": "4720",
-"available": true
+"available": false
 }
 ],
-"available": true,
+"available": false,
 "url": "https://sakemura.com/products/스이게이-코우이쿠-준마이다이긴죠-아키아가리-720ml"
 },
 {
@@ -11819,7 +11975,7 @@
 "variants": [
 {
 "name": "Default Title",
-"price": "3798",
+"price": "4220",
 "available": true
 }
 ],
@@ -13327,10 +13483,10 @@
 {
 "name": "Default Title",
 "price": "4420",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://osakeda.com/products/스이교쿠-토쿠베츠준마이-720ml"
 },
 {
@@ -13967,10 +14123,10 @@
 {
 "name": "Default Title",
 "price": "4085",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://osakeda.com/products/카제노모리-alpha1-dry-720ml"
 },
 {
@@ -15269,10 +15425,10 @@
 {
 "name": "Default Title",
 "price": "4040",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://osakeda.com/products/카제노모리-weekend-2026-히노히카리-607-나마-720ml"
 },
 {
@@ -18013,6 +18169,7 @@
 "vendor": "고바야시 주조 (小林酒造)",
 "type": "호우오우비덴 (鳳凰美田)",
 "tags": [
+"restock",
 "REVIVAL",
 "기본",
 "나마",
@@ -18029,10 +18186,10 @@
 {
 "name": "Default Title",
 "price": "4620",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://sakemura.com/products/호우오우비덴-준마이다이긴죠-야마다보-혼나마-720ml"
 },
 {
@@ -18171,10 +18328,10 @@
 {
 "name": "Default Title",
 "price": "4235",
-"available": false
+"available": true
 }
 ],
-"available": false,
+"available": true,
 "url": "https://osakeda.com/products/하쿠라쿠세이-토쿠베츠-준마이-히야오로시-720ml"
 },
 {
