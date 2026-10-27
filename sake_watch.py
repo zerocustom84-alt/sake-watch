@@ -418,7 +418,13 @@ def git_commit(msg):
             return
         subprocess.run(["git", "commit", "-q", "-m", msg], check=True)
         for _ in range(3):
-            subprocess.run(["git", "pull", "-q", "--rebase", "origin", "main"])
+            # 다른 회차의 커밋과 겹치면: history.csv 는 양쪽 줄을 합치고(.gitattributes union),
+            # state/status 는 지금 회차 것을 우선. 그래도 실패하면 rebase 를 풀어 다음 기회에 재시도
+            r = subprocess.run(["git", "pull", "-q", "--rebase", "-X", "theirs", "origin", "main"])
+            if r.returncode != 0:
+                subprocess.run(["git", "rebase", "--abort"])
+                print("  저장소 동기화 실패 → 다음 저장 때 다시 시도")
+                continue
             if subprocess.run(["git", "push", "-q"]).returncode == 0:
                 return
             time.sleep(5)
