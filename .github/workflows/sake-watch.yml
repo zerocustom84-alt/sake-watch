@@ -19,6 +19,8 @@ jobs:
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main   # 요청된 시점이 아니라 시작 시점의 최신 기록에서 출발 (교대 시 앞 회차 마지막 저장 포함)
 
       - name: Watch shops
         env:
