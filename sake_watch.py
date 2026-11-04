@@ -39,10 +39,10 @@ STATUS_FILE = os.environ.get("STATUS_FILE", "status.json")
 UA = "Mozilla/5.0 (compatible; sake-watch personal restock notifier; low-frequency)"
 
 RUN_MINUTES = float(os.environ.get("RUN_MINUTES", "330"))
-FAST_DAY, FAST_NIGHT = 90, 600          # 빠른 확인 간격(초)
-FAST_PEAK = 45                          # 입고가 몰리는 시간대 간격(초)
-PEAK = [(8, 50, 12, 30), (17, 0, 19, 0)]  # 평일 KST (시작 시,분 ~ 끝 시,분)
-FULL_DAY, FULL_NIGHT = 3600, 3 * 3600   # 전체 확인 간격(초) — 40쪽짜리라 가게 부담이 커서 드물게
+FAST_DAY, FAST_NIGHT = 60, 300          # 빠른 확인 간격(초)
+FAST_PEAK = 30                          # 입고가 몰리는 시간대 간격(초)
+PEAK = [(8, 50, 12, 30), (16, 20, 19, 0)]  # 평일 KST (시작 시,분 ~ 끝 시,분)
+FULL_DAY, FULL_NIGHT = 1800, 3600       # 전체 확인 간격(초) — 여러 쪽짜리라 가게 부담이 커서 드물게
 COMMIT_EVERY = 1800                     # 저장소 커밋 간격(초)
 NIGHT = (2, 8)                          # 새벽 시간대 (KST, 시)
 NEW_LIMIT = 60                          # 신상품 코너에서 볼 최신 상품 수
@@ -108,12 +108,37 @@ class Throttled(Exception):
         self.retry_after = retry_after
 
 
+RELAY_URL = os.environ.get("RELAY_URL", "").strip().rstrip("/")
+RELAY_KEY = os.environ.get("RELAY_KEY", "").strip()
+_relay_stats = {"ok": 0, "fail": 0, "direct": 0}
+
+
+def _open(url):
+    """Cloudflare 중계기가 있으면 그쪽으로, 중계기 자체가 고장이면 직접 요청"""
+    if RELAY_URL and RELAY_KEY:
+        req = urllib.request.Request(f"{RELAY_URL}/?u={urllib.parse.quote(url, safe='')}",
+                                     headers={"x-key": RELAY_KEY, "User-Agent": UA})
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                _relay_stats["ok"] += 1
+                return r.read()
+        except urllib.error.HTTPError as e:
+            if e.headers and e.headers.get("x-upstream-status"):
+                _relay_stats["ok"] += 1
+                raise  # 가게가 보낸 응답(429 등) → 그대로 처리
+            _relay_stats["fail"] += 1
+        except Exception:
+            _relay_stats["fail"] += 1
+        _relay_stats["direct"] += 1
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return r.read()
+
+
 def http_get(url, tries=3):
     for i in range(tries):
         try:
-            req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=30) as r:
-                return r.read()
+            return _open(url)
         except urllib.error.HTTPError as e:
             if e.code in (429, 430):
                 # 가게가 "너무 많다"고 함 → 이번 확인은 포기, 그 가게만 쉬게 함
@@ -562,6 +587,7 @@ def main():
 
         if did:
             status["throttle_codes"] = _throttle_log
+            status["relay"] = dict(_relay_stats, on=bool(RELAY_URL and RELAY_KEY))
             status["resting_until"] = {d: datetime.fromtimestamp(u, KST).strftime("%H:%M")
                                        for d, u in _backoff.items() if u > time.time()}
             save_state(state)
