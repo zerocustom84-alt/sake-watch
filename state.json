@@ -6599,7 +6599,7 @@
 "available": true,
 "handle": "호우오우비덴-미캉귤-720ml",
 "id": "8189550690467",
-"price": 4100.0,
+"price": 4330.0,
 "title": "호우오우비덴 미캉(귤) 720ml",
 "variant": 43912702787747
 },
@@ -39020,7 +39020,7 @@
 "variant": 47510757965987
 },
 "9069871464611": {
-"available": false,
+"available": true,
 "handle": "닷사이-50-준마이다이긴죠-720ml",
 "id": "9069871464611",
 "price": 4540.0,
@@ -62997,7 +62997,7 @@
 "available": true,
 "handle": "도멘-드-텐게이지-라무르-2021-750ml",
 "id": "8307497959607",
-"price": 6590.0,
+"price": 4415.0,
 "title": "도멘 드 텐게이지 라무르 2021 750ml",
 "variant": 45509279547575
 },
@@ -63045,7 +63045,7 @@
 "available": false,
 "handle": "fattoria-al-fiore-verde-2021-750ml",
 "id": "8307627819191",
-"price": 8680.0,
+"price": 5816.0,
 "title": "Fattoria AL FIORE Verde 2021 750ml",
 "variant": 45509814386871
 },
@@ -63085,7 +63085,7 @@
 "available": true,
 "handle": "rue-de-vin-샤르도네-2022-750ml-1",
 "id": "8308479492279",
-"price": 8650.0,
+"price": 5796.0,
 "title": "Rue de Vin 샤르도네 2022 750ml",
 "variant": 45511446200503
 },
@@ -69453,7 +69453,7 @@
 "available": false,
 "handle": "fattoria-al-fiore-nero-2022-레드-와인-750ml",
 "id": "8543635669175",
-"price": 10500.0,
+"price": 7035.0,
 "title": "Fattoria AL FIORE Nero 2022 레드 와인 750ml",
 "variant": 47954580537527
 },
@@ -69501,7 +69501,7 @@
 "available": true,
 "handle": "fermier-vega-2021-레드-와인-750ml",
 "id": "8543745015991",
-"price": 8980.0,
+"price": 6017.0,
 "title": "Fermier VEGA 2021 레드 와인 750ml",
 "variant": 47964558459063
 },
@@ -69509,7 +69509,7 @@
 "available": false,
 "handle": "fattoria-al-fiore-ohno-field-blend-2022-750ml",
 "id": "8543749669047",
-"price": 7980.0,
+"price": 5347.0,
 "title": "Fattoria AL FIORE Ohno Field Blend 2022 750ml",
 "variant": 47964870901943
 },
@@ -69629,7 +69629,7 @@
 "available": true,
 "handle": "rue-de-vin-trio-22-레드-와인-750ml",
 "id": "8545521893559",
-"price": 8980.0,
+"price": 6017.0,
 "title": "Rue de Vin Trio '22 레드 와인 750ml",
 "variant": 48018771345591
 },
@@ -69781,7 +69781,7 @@
 "available": true,
 "handle": "polaris-chardonnay-2019-화이트-와인-750ml",
 "id": "8548316217527",
-"price": 5350.0,
+"price": 3585.0,
 "title": "Polaris Chardonnay 2019 화이트 와인 750ml",
 "variant": 48123205845175
 },
@@ -71181,7 +71181,7 @@
 "available": true,
 "handle": "타카하타-arkadia-select-harvest-2018-레드-와인-750ml",
 "id": "8580506026167",
-"price": 8900.0,
+"price": 5963.0,
 "title": "타카하타 Arkadia Select Harvest 2018 레드 와인 750ml",
 "variant": 48491782144183
 },
@@ -71221,7 +71221,7 @@
 "available": true,
 "handle": "fattoria-al-fiore-passo-a-passo-rosso-2021-레드-와인-750ml",
 "id": "8581327093943",
-"price": 9300.0,
+"price": 6231.0,
 "title": "Fattoria AL FIORE PASSO A PASSO Rosso 2021 레드 와인 750ml",
 "variant": 48493894631607
 },
@@ -71773,7 +71773,7 @@
 "available": true,
 "handle": "les-freres-takeda-merlot-2021-레드-와인-750ml",
 "id": "8600312021175",
-"price": 11900.0,
+"price": 7973.0,
 "title": "Les Frères Takeda Merlot 2021 레드 와인 750ml",
 "variant": 48531860160695
 },
@@ -71853,7 +71853,7 @@
 "available": false,
 "handle": "fattoria-al-fiore-oro-2023-화이트-와인-750ml",
 "id": "8601034522807",
-"price": 13200.0,
+"price": 8844.0,
 "title": "Fattoria AL FIORE ORO 2023 화이트 와인 750ml",
 "variant": 48534126624951
 },
@@ -71909,7 +71909,7 @@
 "available": true,
 "handle": "domaine-kosei-kataoka-merlot-2019-american-oak-레드-와인-750ml",
 "id": "8601132662967",
-"price": 6400.0,
+"price": 4288.0,
 "title": "Domaine KOSEI KATAOKA MERLOT 2019 AMERICAN OAK 레드 와인 750ml",
 "variant": 48534769795255
 },
@@ -76525,7 +76525,7 @@
 "available": false,
 "handle": "cider-masa-mune-코교쿠-750ml",
 "id": "8759977836727",
-"price": 4780.0,
+"price": 3203.0,
 "title": "cider masa mune 코교쿠 750ml",
 "variant": 49133676822711
 },
