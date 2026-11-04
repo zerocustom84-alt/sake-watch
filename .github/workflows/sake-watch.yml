@@ -29,6 +29,8 @@ jobs:
           NOTIFY_SOLDOUT_NEW: ${{ vars.NOTIFY_SOLDOUT_NEW }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          RELAY_URL: ${{ secrets.RELAY_URL }}
+          RELAY_KEY: ${{ secrets.RELAY_KEY }}
           GH_TOKEN: ${{ github.token }}
           PYTHONUNBUFFERED: "1"
         run: |
