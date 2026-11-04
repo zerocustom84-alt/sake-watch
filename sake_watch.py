@@ -39,10 +39,10 @@ STATUS_FILE = os.environ.get("STATUS_FILE", "status.json")
 UA = "Mozilla/5.0 (compatible; sake-watch personal restock notifier; low-frequency)"
 
 RUN_MINUTES = float(os.environ.get("RUN_MINUTES", "330"))
-FAST_DAY, FAST_NIGHT = 60, 300          # 빠른 확인 간격(초)
-FAST_PEAK = 30                          # 입고가 몰리는 시간대 간격(초)
+FAST_DAY, FAST_NIGHT = 90, 600          # 빠른 확인 간격(초)
+FAST_PEAK = 45                          # 입고가 몰리는 시간대 간격(초)
 PEAK = [(8, 50, 12, 30), (17, 0, 19, 0)]  # 평일 KST (시작 시,분 ~ 끝 시,분)
-FULL_DAY, FULL_NIGHT = 600, 1800        # 전체 확인 간격(초)
+FULL_DAY, FULL_NIGHT = 3600, 3 * 3600   # 전체 확인 간격(초) — 40쪽짜리라 가게 부담이 커서 드물게
 COMMIT_EVERY = 1800                     # 저장소 커밋 간격(초)
 NIGHT = (2, 8)                          # 새벽 시간대 (KST, 시)
 NEW_LIMIT = 60                          # 신상품 코너에서 볼 최신 상품 수
@@ -52,7 +52,30 @@ MAX_INDIVIDUAL = 30
 LIST_CHUNK = 15
 CURRENCY_SYMBOL = {"JPY": "¥", "KRW": "₩", "USD": "$"}
 
-_backoff_until = 0.0                    # 429 등으로 쉬는 중이면 그 시각까지
+# 가게별로 따로 쉬기: 제한(429/430)을 받으면 그 가게만 2분 → 4분 → … 최대 60분 쉬고, 성공하면 초기화
+_backoff = {}       # domain -> 쉬는 끝 시각
+_strikes = {}       # domain -> 연속 제한 횟수
+_throttle_log = {}  # domain -> {코드: 횟수}
+
+
+def shop_ready(domain):
+    return time.time() >= _backoff.get(domain, 0)
+
+
+def note_ok(domain):
+    _strikes[domain] = 0
+
+
+def note_throttle(domain, code, retry_after=None):
+    n = _strikes.get(domain, 0) + 1
+    _strikes[domain] = n
+    wait = min(120 * 2 ** (n - 1), 3600)
+    if retry_after:
+        wait = max(wait, retry_after)
+    _backoff[domain] = time.time() + wait
+    log = _throttle_log.setdefault(domain, {})
+    log[str(code)] = log.get(str(code), 0) + 1
+    return wait
 
 
 def now_kst():
@@ -79,11 +102,13 @@ def is_night():
 
 # ---------------------------------------------------------------- 네트워크
 class Throttled(Exception):
-    pass
+    def __init__(self, url, code=429, retry_after=None):
+        super().__init__(url)
+        self.code = code
+        self.retry_after = retry_after
 
 
 def http_get(url, tries=3):
-    global _backoff_until
     for i in range(tries):
         try:
             req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/json"})
@@ -91,9 +116,13 @@ def http_get(url, tries=3):
                 return r.read()
         except urllib.error.HTTPError as e:
             if e.code in (429, 430):
-                # 가게가 "너무 많다"고 함 → 10분 쉬고 이번 확인은 포기
-                _backoff_until = time.time() + 600
-                raise Throttled(url)
+                # 가게가 "너무 많다"고 함 → 이번 확인은 포기, 그 가게만 쉬게 함
+                ra = e.headers.get("Retry-After") if e.headers else None
+                try:
+                    ra = int(float(ra)) if ra else None
+                except ValueError:
+                    ra = None
+                raise Throttled(url, e.code, ra)
             if e.code in (500, 502, 503, 504) and i < tries - 1:
                 time.sleep(10 * (i + 1))
                 continue
@@ -150,7 +179,7 @@ def fetch_catalog(domain):
             items[str(p["id"])] = parse_product(p)
         if len(prods) < 250:
             break
-        time.sleep(1.5)
+        time.sleep(3)
     return items
 
 
@@ -462,14 +491,10 @@ def main():
             dispatch_next()
             dispatched = True
 
-        if t < _backoff_until:
-            time.sleep(min(30, _backoff_until - t))
-            continue
-
         did = False
         # 0) 처음이면 전체 목록으로 기준 저장
         for domain, cfg in SHOPS.items():
-            if state["shops"].get(domain, {}).get("items"):
+            if state["shops"].get(domain, {}).get("items") or not shop_ready(domain):
                 continue
             try:
                 items = fetch_catalog(domain)
@@ -478,9 +503,10 @@ def main():
                 print(f"[{cfg['name']}] 첫 실행: 상품 {len(items)}개 기준 저장")
                 next_full = time.time() + (FULL_NIGHT if is_night() else FULL_DAY)
                 did = True
-            except Throttled:
+                note_ok(domain)
+            except Throttled as e:
                 status["throttled"] += 1
-                break
+                print(f"[{cfg['name']}] 가게가 요청을 제한함({e.code}) → {note_throttle(domain, e.code, e.retry_after) // 60}분 쉼")
             except Exception as e:
                 status["errors"] += 1
                 print(f"[{cfg['name']}] 첫 목록 실패: {e}")
@@ -489,17 +515,17 @@ def main():
             first_run_report = []
 
         # 1) 빠른 확인 (RESTOCK·신상품 코너) — 가게 분류를 먼저 반영하려고 전체 확인보다 앞에
-        if time.time() >= next_fast and time.time() >= _backoff_until:
+        if time.time() >= next_fast:
             for domain, cfg in SHOPS.items():
                 shop = state["shops"].get(domain)
-                if not shop:
+                if not shop or not shop_ready(domain):
                     continue
                 try:
                     record(domain, shop, fast_check(domain, shop))
-                except Throttled:
+                    note_ok(domain)
+                except Throttled as e:
                     status["throttled"] += 1
-                    print(f"[{cfg['name']}] 가게가 요청을 제한함 → 10분 쉼")
-                    break
+                    print(f"[{cfg['name']}] 가게가 요청을 제한함({e.code}) → {note_throttle(domain, e.code, e.retry_after) // 60}분 쉼")
                 except Exception as e:
                     status["errors"] += 1
                     print(f"[{cfg['name']}] 빠른 확인 실패: {e}")
@@ -513,19 +539,19 @@ def main():
             did = True
 
         # 2) 전체 확인
-        if time.time() >= next_full and time.time() >= _backoff_until:
+        if time.time() >= next_full:
             for domain, cfg in SHOPS.items():
                 shop = state["shops"].get(domain)
-                if not shop:
+                if not shop or not shop_ready(domain):
                     continue
                 try:
                     if not shop.get("currency"):
                         shop["currency"] = fetch_currency(domain)
                     record(domain, shop, full_check(domain, shop))
-                except Throttled:
+                    note_ok(domain)
+                except Throttled as e:
                     status["throttled"] += 1
-                    print(f"[{cfg['name']}] 가게가 요청을 제한함 → 10분 쉼")
-                    break
+                    print(f"[{cfg['name']}] 가게가 요청을 제한함({e.code}) → {note_throttle(domain, e.code, e.retry_after) // 60}분 쉼")
                 except Exception as e:
                     status["errors"] += 1
                     print(f"[{cfg['name']}] 전체 확인 실패: {e}")
@@ -535,6 +561,9 @@ def main():
             did = True
 
         if did:
+            status["throttle_codes"] = _throttle_log
+            status["resting_until"] = {d: datetime.fromtimestamp(u, KST).strftime("%H:%M")
+                                       for d, u in _backoff.items() if u > time.time()}
             save_state(state)
             with open(STATUS_FILE, "w", encoding="utf-8") as f:
                 json.dump(status, f, ensure_ascii=False, indent=1)
@@ -544,7 +573,8 @@ def main():
         if time.time() >= next_commit:
             git_commit("update state")
             next_commit = time.time() + COMMIT_EVERY
-        time.sleep(max(1, min(next_fast, next_full, deadline) - time.time()))
+        wake = [next_fast, next_full, deadline] + [u for u in _backoff.values() if u > time.time()]
+        time.sleep(max(1, min(min(wake), time.time() + 60) - time.time()))
 
     save_state(state)
     status["run_ended"] = now_kst().strftime("%Y-%m-%d %H:%M:%S")
