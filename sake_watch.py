@@ -32,6 +32,9 @@ KST = timezone(timedelta(hours=9))
 SHOPS = {
     "osakeda.com": {"name": "오사케다", "restock": "재입고", "new": "전-상품-1", "vip": "v"},
     "sakemura.com": {"name": "사케무라", "restock": "재입고", "new": "전-상품", "vip": "vip"},
+    # 사케도: 마츠리(한정판매) 코너에 올라오는 순간 알림. 공지방 기준 매일 9~16시 → 그 시간엔 15초마다
+    "sakedoo.com": {"name": "사케도", "restock": "한정판매-세일", "new": None, "kind": "마츠리",
+                    "window": (8, 55, 16, 10), "window_sec": 15},
 }
 STATE_FILE = os.environ.get("STATE_FILE", "state.json")
 HISTORY_FILE = os.environ.get("HISTORY_FILE", "history.csv")
@@ -90,7 +93,14 @@ def is_peak():
     return any(a * 60 + b <= m < c * 60 + d for a, b, c, d in PEAK)
 
 
-def fast_interval():
+def fast_interval(domain=None):
+    cfg = SHOPS.get(domain) or {}
+    w = cfg.get("window")
+    if w:
+        n = now_kst()
+        m = n.hour * 60 + n.minute
+        if w[0] * 60 + w[1] <= m < w[2] * 60 + w[3]:
+            return cfg["window_sec"]
     if is_night():
         return FAST_NIGHT
     return FAST_PEAK if is_peak() else FAST_DAY
@@ -310,7 +320,7 @@ def send_alerts(domain, name, events, currency, vip=frozenset()):
     keywords = keyword_list()
     # VIP/VVIP 전용 상품은 등급 회원만 살 수 있어서 알림 제외 (기록은 남김). INCLUDE_VIP=1 이면 포함
     skip_vip = os.environ.get("INCLUDE_VIP", "0") != "1"
-    ev = [(k, it) for k, it in events if k in ("신상품", "재입고") and matches(it["title"], keywords)
+    ev = [(k, it) for k, it in events if k in ("신상품", "재입고", "마츠리") and matches(it["title"], keywords)
           and not (skip_vip and is_vip(it, vip))]
     if not ev:
         return
@@ -381,8 +391,11 @@ def fast_check(domain, shop):
     cfg = SHOPS[domain]
     items = shop["items"]
     restock = fetch_collection(domain, cfg["restock"])
-    time.sleep(1)
-    newest = fetch_collection(domain, cfg["new"], NEW_LIMIT)
+    newest = {}
+    if cfg.get("new"):
+        time.sleep(1)
+        newest = fetch_collection(domain, cfg["new"], NEW_LIMIT)
+    kind = cfg.get("kind", "재입고")   # 코너에 새로 올라온 상품의 이름 (사케도는 "마츠리")
     prev_members = shop.get("restock_members")
     events = []
 
@@ -400,7 +413,7 @@ def fast_check(domain, shop):
         old = items.get(pid)
         if pid not in prev_set and (old is None or not old.get("available")):
             # 코너에 올라왔는데 이미 다 팔렸으면 기록만 (1분 안에 품절된 한정 수량)
-            events.append(("재입고" if it["available"] else "재입고(즉시품절)", it))
+            events.append((kind if it["available"] else f"{kind}(즉시품절)", it))
         elif pid in prev_set and old is not None:
             # 코너에 계속 있는 상품의 재고 변화 (사케무라는 품절돼도 코너에 남겨 둠)
             if old.get("available") and not it["available"]:
@@ -450,7 +463,7 @@ def full_check(domain, shop):
         old = prev.get(pid)
         if old is None:
             if pid in restock_set:
-                events.append(("재입고", it))
+                events.append((SHOPS[domain].get("kind", "재입고"), it))
             else:
                 events.append(("신상품" if it["available"] else "신상품(품절)", it))
         elif not old.get("available") and it["available"]:
@@ -503,7 +516,8 @@ def main():
     once = os.environ.get("ONCE") == "1"
     status = {"run_started": now_kst().strftime("%Y-%m-%d %H:%M:%S"), "fast_checks": 0,
               "full_checks": 0, "errors": 0, "throttled": 0, "fast_times": []}
-    next_fast = next_full = 0.0
+    next_full = 0.0
+    next_fast = {d: 0.0 for d in SHOPS}   # 가게마다 빠른 확인 시각 (사케도는 마츠리 시간에 더 자주)
     next_commit = start + COMMIT_EVERY
     dispatched = False
     first_run_report = []
@@ -540,8 +554,12 @@ def main():
             first_run_report = []
 
         # 1) 빠른 확인 (RESTOCK·신상품 코너) — 가게 분류를 먼저 반영하려고 전체 확인보다 앞에
-        if time.time() >= next_fast:
-            for domain, cfg in SHOPS.items():
+        # 확인 간격이 짧은 가게(마츠리 시간의 사케도)부터
+        due = sorted((d for d in SHOPS if time.time() >= next_fast[d]), key=fast_interval)
+        if due:
+            for domain in due:
+                cfg = SHOPS[domain]
+                next_fast[domain] = time.time() + fast_interval(domain)
                 shop = state["shops"].get(domain)
                 if not shop or not shop_ready(domain):
                     continue
@@ -559,8 +577,8 @@ def main():
             status["fast_checks"] += 1
             status["last_fast"] = now_kst().strftime("%Y-%m-%d %H:%M:%S")
             status["fast_times"] = (status["fast_times"] + [stamp])[-30:]
-            print(f"{stamp} 확인 완료 (빠른 {status['fast_checks']}회, 전체 {status['full_checks']}회)")
-            next_fast = time.time() + fast_interval()
+            if len(due) == len(SHOPS) or status["fast_checks"] % 20 == 0:
+                print(f"{stamp} 확인 완료 (빠른 {status['fast_checks']}회, 전체 {status['full_checks']}회)")
             did = True
 
         # 2) 전체 확인
@@ -599,7 +617,7 @@ def main():
         if time.time() >= next_commit:
             git_commit("update state")
             next_commit = time.time() + COMMIT_EVERY
-        wake = [next_fast, next_full, deadline] + [u for u in _backoff.values() if u > time.time()]
+        wake = [min(next_fast.values()), next_full, deadline] + [u for u in _backoff.values() if u > time.time()]
         time.sleep(max(1, min(min(wake), time.time() + 60) - time.time()))
 
     save_state(state)
