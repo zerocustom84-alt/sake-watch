@@ -214,6 +214,8 @@ def fetch_catalog(domain):
             items[str(p["id"])] = parse_product(p)
         if len(prods) < 250:
             break
+        if _between_pages:
+            _between_pages(domain)
         time.sleep(3)
     return items
 
@@ -342,6 +344,9 @@ def send_alerts(domain, name, events, currency, vip=frozenset()):
                    click=buy_url(domain, it),
                    actions=[("바로 결제", buy_url(domain, it)), ("상품 보기", product_url(domain, it))])
             time.sleep(0.5)
+
+
+_between_pages = None   # 전체 확인 페이지 사이에 끼워 넣을 빠른 확인 (main 에서 설정)
 
 
 # ---------------------------------------------------------------- 상태·기록
@@ -522,6 +527,41 @@ def main():
     dispatched = False
     first_run_report = []
 
+    def run_fast(due):
+        """빠른 확인 (RESTOCK·마츠리·신상품 코너)"""
+        for domain in due:
+            cfg = SHOPS[domain]
+            next_fast[domain] = time.time() + fast_interval(domain)
+            shop = state["shops"].get(domain)
+            if not shop or not shop_ready(domain):
+                continue
+            try:
+                record(domain, shop, fast_check(domain, shop))
+                note_ok(domain)
+            except Throttled as e:
+                status["throttled"] += 1
+                print(f"[{cfg['name']}] 가게가 요청을 제한함({e.code}) → {note_throttle(domain, e.code, e.retry_after) // 60}분 쉼")
+            except Exception as e:
+                status["errors"] += 1
+                print(f"[{cfg['name']}] 빠른 확인 실패: {e}")
+            time.sleep(1)
+        stamp = now_kst().strftime("%H:%M:%S")
+        status["fast_checks"] += 1
+        status["last_fast"] = now_kst().strftime("%Y-%m-%d %H:%M:%S")
+        status["fast_times"] = (status["fast_times"] + [stamp])[-30:]
+        if len(due) == len(SHOPS) or status["fast_checks"] % 20 == 0:
+            print(f"{stamp} 확인 완료 (빠른 {status['fast_checks']}회, 전체 {status['full_checks']}회)")
+
+    def between_pages(current):
+        """전체 확인(몇 분 걸림) 도중에도 마츠리 시간의 사케도는 제때 확인"""
+        due = [d for d in SHOPS if d != current and SHOPS[d].get("window")
+               and time.time() >= next_fast[d] and fast_interval(d) == SHOPS[d]["window_sec"]]
+        if due:
+            run_fast(due)
+
+    global _between_pages
+    _between_pages = between_pages
+
     while True:
         t = time.time()
         if t >= deadline:
@@ -557,28 +597,7 @@ def main():
         # 확인 간격이 짧은 가게(마츠리 시간의 사케도)부터
         due = sorted((d for d in SHOPS if time.time() >= next_fast[d]), key=fast_interval)
         if due:
-            for domain in due:
-                cfg = SHOPS[domain]
-                next_fast[domain] = time.time() + fast_interval(domain)
-                shop = state["shops"].get(domain)
-                if not shop or not shop_ready(domain):
-                    continue
-                try:
-                    record(domain, shop, fast_check(domain, shop))
-                    note_ok(domain)
-                except Throttled as e:
-                    status["throttled"] += 1
-                    print(f"[{cfg['name']}] 가게가 요청을 제한함({e.code}) → {note_throttle(domain, e.code, e.retry_after) // 60}분 쉼")
-                except Exception as e:
-                    status["errors"] += 1
-                    print(f"[{cfg['name']}] 빠른 확인 실패: {e}")
-                time.sleep(1)
-            stamp = now_kst().strftime("%H:%M:%S")
-            status["fast_checks"] += 1
-            status["last_fast"] = now_kst().strftime("%Y-%m-%d %H:%M:%S")
-            status["fast_times"] = (status["fast_times"] + [stamp])[-30:]
-            if len(due) == len(SHOPS) or status["fast_checks"] % 20 == 0:
-                print(f"{stamp} 확인 완료 (빠른 {status['fast_checks']}회, 전체 {status['full_checks']}회)")
+            run_fast(due)
             did = True
 
         # 2) 전체 확인
@@ -598,11 +617,11 @@ def main():
                 except Exception as e:
                     status["errors"] += 1
                     print(f"[{cfg['name']}] 전체 확인 실패: {e}")
+                between_pages(domain)
             status["full_checks"] += 1
             status["last_full"] = now_kst().strftime("%Y-%m-%d %H:%M:%S")
             next_full = time.time() + (FULL_NIGHT if is_night() else FULL_DAY)
             did = True
-
         if did:
             status["throttle_codes"] = _throttle_log
             status["relay"] = dict(_relay_stats, on=bool(RELAY_URL and RELAY_KEY))
